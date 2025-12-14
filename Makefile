@@ -9,6 +9,8 @@ add:
 	git status
 	git add .
 	git status
+	git config user.name "AnvayB"
+	git config user.email "anvay.bhanap@gmail.com"
 
 # git commit -m "message"
 
