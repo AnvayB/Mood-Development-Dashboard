@@ -1,1 +1,2 @@
 Normalize February to be like 30 days instead of 28/29
+Update Emotions page to be more readable - more valuable

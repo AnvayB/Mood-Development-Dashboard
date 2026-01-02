@@ -13,6 +13,12 @@ st.markdown(
         padding-left: 2.5rem;
         padding-right: 2.5rem;
     }
+    /* Disable the "app" link (first navigation item) in the sidebar */
+    ul[data-testid="stSidebarNav"] > li:first-child a {
+        pointer-events: none !important;
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
