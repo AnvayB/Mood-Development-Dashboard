@@ -38,6 +38,18 @@ def load_data():
         if c in df_monthly.columns:
             df_monthly[c] = pd.to_numeric(df_monthly[c], errors="coerce")
 
+    # Normalize HI to a 30-day equivalent so month-length differences
+    # (especially Feb's 28/29 days) don't artificially depress the index.
+    df_monthly["_actual_days"] = df_monthly.apply(
+        lambda r: calendar.monthrange(int(r["year"]), int(r["month"]))[1]
+        if pd.notna(r["year"]) and pd.notna(r["month"]) else None,
+        axis=1,
+    )
+    df_monthly["happiness_index"] = (
+        df_monthly["happiness_index"] / df_monthly["_actual_days"] * 30
+    ).round(0)
+    df_monthly.drop(columns=["_actual_days"], inplace=True)
+
     if "pct_days" in df_year_emotion.columns:
         df_year_emotion["pct_days"] = pd.to_numeric(df_year_emotion["pct_days"], errors="coerce")
 

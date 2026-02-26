@@ -1,3 +1,5 @@
+import calendar
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -25,7 +27,13 @@ def load_monthly():
     df = pd.read_csv("data/mood_monthly_hi.csv")
     df["year"] = df["year"].astype(int)
     df["month"] = df["month"].astype(int)
-    df["happiness_index"] = pd.to_numeric(df["happiness_index"], errors="coerce").round(0).astype("Int64")
+    # Normalize HI to a 30-day equivalent so month-length differences
+    # (especially Feb's 28/29 days) don't artificially depress the index.
+    _raw_hi = pd.to_numeric(df["happiness_index"], errors="coerce")
+    _actual_days = df.apply(
+        lambda r: calendar.monthrange(int(r["year"]), int(r["month"]))[1], axis=1
+    )
+    df["happiness_index"] = (_raw_hi / _actual_days * 30).round(0).astype("Int64")
     df["month_name"] = df["month"].map(lambda m: MONTH_NAMES[m-1])
     df["year_month"] = pd.to_datetime(df["year"].astype(str) + "-" + df["month"].astype(str) + "-01")
     return df.dropna(subset=["happiness_index"]).copy()
