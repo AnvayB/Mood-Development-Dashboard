@@ -80,30 +80,31 @@ with subheader_container:
     with header_col2:
         st.markdown(f"<h4 style='margin-top: 0; padding-top: 12px; margin-bottom: 0;'>over time</h4>", unsafe_allow_html=True)
 
-metric = "Days"
+# Precompute total logged days per year-month (across all emotions) for % calculation
+total_per_ym = (
+    df.groupby("year_month", as_index=False)
+      .agg(total_days=("date", "count"))
+)
 
 trend = (
     df[df["emotion"] == emotion]
     .groupby(["year", "month", "year_month"], as_index=False)
-    .agg(
-        days=("date", "count"),
-        avg_score=("score", "mean"),
-    )
+    .agg(days=("date", "count"))
     .sort_values("year_month")
 )
 
-y_col = "days" if metric == "Days" else "avg_score"
+trend = trend.merge(total_per_ym, on="year_month", how="left")
+trend["pct_month"] = (trend["days"] / trend["total_days"] * 100).round(1)
 
 fig = px.line(
     trend,
     x="year_month",
-    y=y_col,
+    y="pct_month",
     markers=True,
-    title=f"{emotion} — {metric} over time"
+    title=f"{emotion} — % of days per month"
 )
 
-
-trend["roll3"] = trend[y_col].rolling(3, min_periods=1).mean()
+trend["roll3"] = trend["pct_month"].rolling(3, min_periods=1).mean()
 fig.add_scatter(
     x=trend["year_month"],
     y=trend["roll3"],
@@ -116,7 +117,8 @@ fig.add_scatter(
 fig.update_layout(
     height=420,
     xaxis_title="",
-    yaxis_title="",
+    yaxis_title="% of month",
+    yaxis=dict(ticksuffix="%"),
     legend=dict(
         x=0.98,
         y=0.98,
@@ -160,47 +162,50 @@ st.plotly_chart(fig_hm, use_container_width=True)
 st.divider()
 
 # ----------------------------
-# Section 3 — Volatility by year
+# Section 3 — Total days per year
 # ----------------------------
-st.subheader("Yearly volatility")
+st.subheader("Total days per year")
 
-vol = (
+yearly = (
     trend.groupby("year", as_index=False)
-    .agg(
-        avg_days=("days", "mean"),
-        std_days=("days", "std"),
-    )
+         .agg(total_days=("days", "sum"))
 )
 
-fig_vol = px.bar(
-    vol,
+fig_yearly = px.bar(
+    yearly,
     x="year",
-    y="std_days",
-    title=f"{emotion} — volatility (std dev of monthly days)",
+    y="total_days",
+    text="total_days",
+    title=f"{emotion} — Total days per year",
 )
-fig_vol.update_layout(height=360, xaxis_title="", yaxis_title="Std dev")
-st.plotly_chart(fig_vol, use_container_width=True)
+fig_yearly.update_layout(
+    height=360,
+    xaxis_title="",
+    yaxis_title="Days",
+    xaxis=dict(dtick=1),
+)
+fig_yearly.update_traces(textposition="outside")
+st.plotly_chart(fig_yearly, use_container_width=True)
 
 st.divider()
 
 # ----------------------------
 # Section 4 — Drill-down
 # ----------------------------
-st.subheader("Drill-down")
+with st.expander("Drill-down by month"):
+    c1, c2 = st.columns(2)
+    with c1:
+        yr = st.selectbox("Year", sorted(df["year"].unique()))
+    with c2:
+        mo = st.selectbox("Month", list(range(1,13)), format_func=lambda m: MONTH_NAMES[m-1])
 
-c1, c2 = st.columns(2)
-with c1:
-    yr = st.selectbox("Year", sorted(df["year"].unique()))
-with c2:
-    mo = st.selectbox("Month", list(range(1,13)), format_func=lambda m: MONTH_NAMES[m-1])
+    drill = df[
+        (df["emotion"] == emotion) &
+        (df["year"] == yr) &
+        (df["month"] == mo)
+    ].sort_values("date").copy()
 
-drill = df[
-    (df["emotion"] == emotion) &
-    (df["year"] == yr) &
-    (df["month"] == mo)
-].sort_values("date").copy()
+    # Format date to remove timestamp (show only date)
+    drill["date"] = drill["date"].dt.date
 
-# Format date to remove timestamp (show only date)
-drill["date"] = drill["date"].dt.date
-
-st.dataframe(drill[["date","score","sheet","color_hex"]], use_container_width=True)
+    st.dataframe(drill[["date","emotion","score","sheet","color_hex"]], use_container_width=True)
