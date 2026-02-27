@@ -3,6 +3,7 @@ import calendar
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from data.db import load_all_entries, load_monthly_hi
 
 # Widen page content beyond default container
 st.markdown(
@@ -24,38 +25,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-@st.cache_data
-def load_data():
-    df_all = pd.read_csv("data/mood_all_years.csv", parse_dates=["date"])
-    df_monthly = pd.read_csv("data/mood_monthly_hi.csv")
-    df_year_emotion = pd.read_csv("data/mood_year_emotion_breakdown.csv")
-
-    for c in ["year", "month", "day", "score"]:
-        if c in df_all.columns:
-            df_all[c] = pd.to_numeric(df_all[c], errors="coerce")
-
-    for c in ["year", "month", "happiness_index"]:
-        if c in df_monthly.columns:
-            df_monthly[c] = pd.to_numeric(df_monthly[c], errors="coerce")
-
-    # Normalize HI to a 30-day equivalent so month-length differences
-    # (especially Feb's 28/29 days) don't artificially depress the index.
-    df_monthly["_actual_days"] = df_monthly.apply(
-        lambda r: calendar.monthrange(int(r["year"]), int(r["month"]))[1]
-        if pd.notna(r["year"]) and pd.notna(r["month"]) else None,
-        axis=1,
-    )
-    df_monthly["happiness_index"] = (
-        df_monthly["happiness_index"] / df_monthly["_actual_days"] * 30
-    ).round(0)
-    df_monthly.drop(columns=["_actual_days"], inplace=True)
-
-    if "pct_days" in df_year_emotion.columns:
-        df_year_emotion["pct_days"] = pd.to_numeric(df_year_emotion["pct_days"], errors="coerce")
-
-    return df_all, df_monthly, df_year_emotion
-
-df_all, df_monthly, df_year_emotion = load_data()
+df_all = load_all_entries()
+df_monthly = load_monthly_hi()
+# df_year_emotion was only used internally; Supabase computes HI on-the-fly
+df_year_emotion = pd.DataFrame()
 
 st.title("Overview")
 

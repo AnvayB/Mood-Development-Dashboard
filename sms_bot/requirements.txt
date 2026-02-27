@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+twilio
+anthropic
+supabase
+apscheduler
+pytz
+python-dotenv
+python-multipart
+pydantic-settings

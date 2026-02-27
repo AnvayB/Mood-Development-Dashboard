@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import calendar
 from datetime import date
+from data.db import load_all_entries
 
 MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 
@@ -36,14 +37,8 @@ st.markdown(
 
 
 
-@st.cache_data
 def load_all():
-    df = pd.read_csv("data/mood_all_years.csv", parse_dates=["date"])
-    df["year"] = df["year"].astype(int)
-    df["month"] = df["month"].astype(int)
-    df["day"] = df["day"].astype(int)
-    df["score"] = pd.to_numeric(df["score"], errors="coerce")
-    return df
+    return load_all_entries()
 
 df = load_all()
 
