@@ -20,8 +20,24 @@ def _client():
 def load_all_entries() -> pd.DataFrame:
     """Replaces pd.read_csv('data/mood_all_years.csv') across all pages.
     Cache refreshes every 5 minutes so new SMS entries appear promptly."""
-    data = _client().table("mood_entries").select("*").order("date").limit(10000).execute().data
-    df = pd.DataFrame(data)
+    client = _client()
+    rows = []
+    chunk = 1000
+    start = 0
+    while True:
+        batch = (
+            client.table("mood_entries")
+            .select("*")
+            .order("date")
+            .range(start, start + chunk - 1)
+            .execute()
+            .data
+        )
+        rows.extend(batch)
+        if len(batch) < chunk:
+            break
+        start += chunk
+    df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"])
     for c in ["year", "month", "day", "score"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
