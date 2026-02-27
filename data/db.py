@@ -20,7 +20,7 @@ def _client():
 def load_all_entries() -> pd.DataFrame:
     """Replaces pd.read_csv('data/mood_all_years.csv') across all pages.
     Cache refreshes every 5 minutes so new SMS entries appear promptly."""
-    data = _client().table("mood_entries").select("*").order("date").execute().data
+    data = _client().table("mood_entries").select("*").order("date").limit(10000).execute().data
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"])
     for c in ["year", "month", "day", "score"]:
