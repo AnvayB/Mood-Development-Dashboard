@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from data.db import load_all_entries
 
 MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
@@ -22,18 +23,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-@st.cache_data
 def load_all():
-    df = pd.read_csv("data/mood_all_years.csv", parse_dates=["date"])
-    df["year"] = df["year"].astype(int)
-    df["month"] = df["month"].astype(int)
-    df["day"] = df["day"].astype(int)
-    df["score"] = pd.to_numeric(df["score"], errors="coerce")
-    df["month_name"] = df["month"].map(lambda m: MONTH_NAMES[m-1])
-    df["year_month"] = pd.to_datetime(
-        df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
-    )
-    return df
+    return load_all_entries()
 
 df = load_all()
 
