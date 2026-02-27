@@ -35,7 +35,7 @@ BATCH = 100
 print(f"Migrating {len(records)} rows to Supabase...")
 for i in range(0, len(records), BATCH):
     batch = records[i:i + BATCH]
-    client.table("mood_entries").upsert(batch).execute()
+    client.table("mood_entries").upsert(batch, on_conflict="date").execute()
     print(f"  {min(i + BATCH, len(records))}/{len(records)} rows done")
 
 print("Migration complete!")
