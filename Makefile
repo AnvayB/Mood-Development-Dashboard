@@ -14,8 +14,6 @@ add:
 
 # git commit -m "message"
 
-trials:
-	git push origin trials
 
 push:
 	git push origin main
@@ -24,7 +22,6 @@ main:
 	git checkout main
 	git branch
 	git pull
-	git checkout trials
 
 user-reset:
 	git config user.name "AnvayB"
@@ -34,3 +31,7 @@ user-check:
 	git config user.name
 	git config user.email
 
+test:
+	curl -X POST https://mood-development-dashboard-production.up.railway.app/webhook/sms \
+  -d "Body=had a really productive day" \
+  -d "From=+14081234567"
