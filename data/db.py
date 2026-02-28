@@ -39,8 +39,12 @@ def load_all_entries() -> pd.DataFrame:
         start += chunk
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"])
-    for c in ["year", "month", "day", "score"]:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
+    # Derive year/month/day from date — ensures manual edits to `date` in
+    # Supabase are always reflected correctly without needing to update all columns.
+    df["year"] = df["date"].dt.year
+    df["month"] = df["date"].dt.month
+    df["day"] = df["date"].dt.day
+    df["score"] = pd.to_numeric(df["score"], errors="coerce")
     df["month_name"] = df["month"].map(lambda m: MONTH_NAMES[int(m) - 1])
     df["year_month"] = pd.to_datetime(
         df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
