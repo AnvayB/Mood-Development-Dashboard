@@ -31,7 +31,11 @@ user-check:
 	git config user.name
 	git config user.email
 
-test:
+log:
 	curl -X POST https://mood-development-dashboard-production.up.railway.app/webhook/sms \
-  -d "Body=had a really productive day" \
+  -d "Body=$(filter-out log,$(MAKECMDGOALS))" \
   -d "From=+14081234567"
+
+# Catch-all so the message isn't treated as a missing target
+%:
+	@:

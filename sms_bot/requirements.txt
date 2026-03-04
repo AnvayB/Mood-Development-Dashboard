@@ -1,10 +1,7 @@
-fastapi
-uvicorn[standard]
-twilio
+discord.py
 anthropic
 supabase
 apscheduler
 pytz
 python-dotenv
-python-multipart
 pydantic-settings
