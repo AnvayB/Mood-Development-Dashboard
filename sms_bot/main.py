@@ -17,6 +17,8 @@ bot = discord.Client(intents=intents)
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
+    user = await bot.fetch_user(int(settings.DISCORD_USER_ID))
+    await user.send("✅ Mood bot is online! I'll DM you every night at 9pm PT to log your day.")
     schedule_daily_prompt(bot)
 
 
