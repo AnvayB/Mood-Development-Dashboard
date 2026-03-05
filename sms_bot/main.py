@@ -1,12 +1,13 @@
-from datetime import date
+from datetime import date, datetime
 
 import discord
+import pytz
 
 import database as db
 from categorize import categorize_emotion
 from config import settings
 from database import EMOTION_MAP
-from scheduler import schedule_daily_prompt
+from scheduler import _today_pt, schedule_daily_prompt
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -38,7 +39,7 @@ async def on_message(message: discord.Message):
 
     # Check for a pending session (supports late replies)
     session = db.get_pending_session(settings.DISCORD_USER_ID)
-    log_date = date.fromisoformat(session["for_date"]) if session else date.today()
+    log_date = date.fromisoformat(session["for_date"]) if session else _today_pt()
 
     # Duplicate guard
     if db.entry_exists(log_date):

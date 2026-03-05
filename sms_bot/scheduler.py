@@ -1,18 +1,26 @@
-from datetime import date
+from datetime import datetime
 
 import discord
+import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 import database as db
 from config import settings
 
+_PT = pytz.timezone("America/Los_Angeles")
+
+
+def _today_pt():
+    return datetime.now(_PT).date()
+
 
 async def send_daily_prompt(bot: discord.Client) -> None:
     user = await bot.fetch_user(int(settings.DISCORD_USER_ID))
     await user.send("Hey! How was your day? Reply with how you felt and I'll log it for you 📝")
-    db.log_pending_session(settings.DISCORD_USER_ID, date.today())
-    print(f"Daily prompt sent for {date.today()}")
+    today = _today_pt()
+    db.log_pending_session(settings.DISCORD_USER_ID, today)
+    print(f"Daily prompt sent for {today}")
 
 
 def schedule_daily_prompt(bot: discord.Client) -> None:
