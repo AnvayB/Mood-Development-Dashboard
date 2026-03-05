@@ -28,11 +28,11 @@ def insert_entry(log_date: date, emotion: str) -> None:
         "year": log_date.year,
         "month": log_date.month,
         "day": log_date.day,
-        "sheet": "sms_bot",
+        "sheet": "discord_bot",
         "emotion": emotion,
         "score": meta["score"],
         "color_hex": meta["color_hex"],
-        "palette_match": "SMS_BOT",
+        "palette_match": "DISCORD_BOT",
         "match_dist": 0.0,
     }).execute()
 
