@@ -11,6 +11,20 @@ from supabase import create_client
 MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+EMOTION_COLOR_MAP = {
+    "Happy":          "#FFD966",
+    "Productive":     "#38761D",
+    "Good":           "#93C47D",
+    "Tired":          "#9FC5E8",
+    "Lazy":           "#EAD1DC",
+    "SAD":            "#B7B7B7",
+    "Stress/Anxiety": "#D1802C",
+    "Angry/Annoyed":  "#CC0000",
+    "Depressed":      "#1155CC",
+    "Hopeless":       "#674EA7",
+    "Suicidal":       "#000000",
+}
+
 
 def _client():
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
