@@ -69,3 +69,10 @@ def mark_session_responded(session_id: int) -> None:
      .update({"responded": True})
      .eq("id", session_id)
      .execute())
+
+
+def update_notes(log_date: date, notes: str) -> None:
+    (client.table("mood_entries")
+     .update({"notes": notes})
+     .eq("date", log_date.isoformat())
+     .execute())
