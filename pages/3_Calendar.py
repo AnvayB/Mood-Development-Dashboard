@@ -141,14 +141,23 @@ for week in weeks:
         score = row["score"]
         bg = EMOTION_HEX.get(emo, "#444444")
         fg = text_color(bg)
+        note_text = str(row.get("notes") or "").strip()
 
         # Tooltip via title=""
         tooltip = f"{emo} | score {score} | {row['date'].date()}"
+        if note_text:
+            tooltip += f" | 📝 {note_text}"
+
+        note_indicator = (
+            '<div style="position:absolute;bottom:6px;right:8px;font-size:11px;opacity:0.75;">📝</div>'
+            if note_text else ""
+        )
 
         cols[i].markdown(
             f"""
             <div title="{tooltip}"
                  style="
+                    position:relative;
                     height:78px;
                     border-radius:14px;
                     padding:10px;
@@ -164,6 +173,7 @@ for week in weeks:
                 <div style="margin-top:2px; font-size:12px; opacity:0.9;">
                     {int(score) if pd.notna(score) else ""}
                 </div>
+                {note_indicator}
             </div>
             """,
             unsafe_allow_html=True
@@ -193,8 +203,11 @@ table["date"] = table["date"].dt.date
 if emotion_filter:
     table = table[table["emotion"].isin(emotion_filter)]
 
+table_cols = ["date", "day", "emotion", "score", "sheet", "color_hex"]
+if "notes" in table.columns:
+    table_cols.append("notes")
 st.dataframe(
-    table[["date","day","emotion","score","sheet","color_hex"]],
+    table[table_cols],
     use_container_width=True,
     hide_index=True
 )
