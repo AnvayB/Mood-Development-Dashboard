@@ -145,12 +145,10 @@ for week in weeks:
 
         # Tooltip via title=""
         tooltip = f"{emo} | score {score} | {row['date'].date()}"
-        if note_text:
-            tooltip += f" | {note_text}"
 
         _note_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" '
-            'fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" '
+            'fill="none" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
             '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
             '<polyline points="14 2 14 8 20 8"/>'
             '<line x1="16" y1="13" x2="8" y2="13"/>'
@@ -159,7 +157,7 @@ for week in weeks:
             '</svg>'
         )
         note_indicator = (
-            f'<div style="position:absolute;bottom:6px;right:8px;opacity:0.5;">{_note_svg}</div>'
+            f'<div title="{note_text}" style="position:absolute;bottom:6px;right:8px;opacity:0.6;">{_note_svg}</div>'
             if note_text else ""
         )
 
