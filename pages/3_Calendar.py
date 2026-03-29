@@ -105,12 +105,12 @@ def text_color(bg_hex: str) -> str:
 # ----------------------------
 st.subheader(f"{MONTH_NAMES[month-1]} {year}")
 
-cal = calendar.Calendar(firstweekday=0)  # 0=Monday
+cal = calendar.Calendar(firstweekday=6)  # 6=Sunday
 weeks = cal.monthdayscalendar(year, month)
 
 # Weekday labels
 cols = st.columns(7)
-for i, name in enumerate(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]):
+for i, name in enumerate(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]):
     cols[i].markdown(f"<div style='text-align:center; opacity:0.8; font-weight:600;'>{name}</div>", unsafe_allow_html=True)
 
 # Render each week
@@ -146,10 +146,20 @@ for week in weeks:
         # Tooltip via title=""
         tooltip = f"{emo} | score {score} | {row['date'].date()}"
         if note_text:
-            tooltip += f" | 📝 {note_text}"
+            tooltip += f" | {note_text}"
 
+        _note_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" '
+            'fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+            '<polyline points="14 2 14 8 20 8"/>'
+            '<line x1="16" y1="13" x2="8" y2="13"/>'
+            '<line x1="16" y1="17" x2="8" y2="17"/>'
+            '<polyline points="10 9 9 9 8 9"/>'
+            '</svg>'
+        )
         note_indicator = (
-            '<div style="position:absolute;bottom:6px;right:8px;font-size:11px;opacity:0.75;">📝</div>'
+            f'<div style="position:absolute;bottom:6px;right:8px;opacity:0.5;">{_note_svg}</div>'
             if note_text else ""
         )
 
