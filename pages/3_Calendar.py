@@ -51,7 +51,6 @@ st.markdown(
 )
 
 
-
 def load_all():
     return load_all_entries()
 
@@ -66,7 +65,6 @@ years = sorted(df["year"].unique().tolist())
 year = st.sidebar.selectbox("Year", years, index=len(years) - 1)
 
 months_available = sorted(df[df["year"] == year]["month"].unique().tolist())
-# default to latest available month in that year
 default_month_idx = len(months_available) - 1
 month = st.sidebar.selectbox(
     "Month",
@@ -84,12 +82,10 @@ emotions = sorted(df["emotion"].dropna().unique().tolist())
 dfm = df[(df["year"] == year) & (df["month"] == month)].copy()
 dfm = dfm.sort_values("day")
 
-# one row per day (you should already have 1/day)
 day_to_row = {int(r["day"]): r for _, r in dfm.iterrows()}
 
 # ----------------------------
-# Color mapping (use your palette_match if you want, but emotion is enough)
-# Feel free to tweak the hex values to match your actual sheet colors.
+# Color mapping
 # ----------------------------
 EMOTION_HEX = {
     "Happy": "#FFD966",
@@ -103,50 +99,52 @@ EMOTION_HEX = {
     "Depressed": "#1155CC",
     "Hopeless": "#674EA7",
     "Horrible": "#000000",
-    # If you have extras (like you showed earlier)
     "Suicidal": "#000000",
 }
 
 def text_color(bg_hex: str) -> str:
-    """Choose white/black text based on background luminance."""
     h = bg_hex.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-    # perceived luminance
     lum = 0.2126*r + 0.7152*g + 0.0722*b
     return "#111111" if lum > 160 else "#F5F5F5"
 
+def clean_note(raw) -> str:
+    """Return plain text from a notes value (strip HTML tags the DB may have stored)."""
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return ""
+    return re.sub(r"<[^>]+>", "", str(raw)).strip()
+
 # ----------------------------
-# Calendar grid (Mon-Sun)
+# Calendar grid
 # ----------------------------
 st.subheader(f"{MONTH_NAMES[month-1]} {year}")
 
-cal = calendar.Calendar(firstweekday=0)  # 0=Monday
+cal = calendar.Calendar(firstweekday=6)  # 6 = Sunday
 weeks = cal.monthdayscalendar(year, month)
 
-# Weekday labels
 cols = st.columns(7)
-for i, name in enumerate(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]):
-    cols[i].markdown(f"<div style='text-align:center; opacity:0.8; font-weight:600;'>{name}</div>", unsafe_allow_html=True)
+for i, name in enumerate(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]):
+    cols[i].markdown(
+        f"<div style='text-align:center;opacity:0.8;font-weight:600;'>{name}</div>",
+        unsafe_allow_html=True
+    )
 
-# Render each week
 for week in weeks:
     cols = st.columns(7)
     for i, d in enumerate(week):
         if d == 0:
-            # empty cell
             cols[i].markdown(
-                "<div style='height:78px; border-radius:12px; background:rgba(255,255,255,0.03);'></div>",
+                "<div style='height:78px;border-radius:12px;background:rgba(255,255,255,0.03);'></div>",
                 unsafe_allow_html=True
             )
             continue
 
         row = day_to_row.get(d)
         if row is None:
-            # missing day (should be rare)
             cols[i].markdown(
-                f"<div style='height:78px; border-radius:12px; padding:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);'>"
-                f"<div style='font-size:16px; font-weight:700;'>{d}</div>"
-                f"<div style='opacity:0.6; font-size:12px;'>No data</div>"
+                f"<div style='height:78px;border-radius:12px;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);'>"
+                f"<div style='font-size:16px;font-weight:700;'>{d}</div>"
+                f"<div style='opacity:0.6;font-size:12px;'>No data</div>"
                 f"</div>",
                 unsafe_allow_html=True
             )
@@ -157,17 +155,11 @@ for week in weeks:
         bg = EMOTION_HEX.get(emo, "#444444")
         fg = text_color(bg)
 
-        raw_note = row.get("notes", None)
-        has_note = (
-            raw_note is not None
-            and pd.notna(raw_note)
-            and re.sub(r"<[^>]+>", "", str(raw_note)).strip() != ""
-        )
+        # Build note tooltip — strip any HTML the DB may have stored, then escape
+        note_text = clean_note(row.get("notes", None))
         note_html = ""
-        if has_note:
-            # Strip any HTML tags the DB may have stored, then escape for safe embedding
-            clean = re.sub(r"<[^>]+>", "", str(raw_note)).strip()
-            safe = html_lib.escape(clean)
+        if note_text:
+            safe = html_lib.escape(note_text)
             note_html = (
                 '<div class="day-note-wrapper">'
                 '<span class="day-note-icon">\U0001f4c4</span>'
@@ -176,6 +168,7 @@ for week in weeks:
             )
 
         score_display = int(score) if pd.notna(score) else ""
+        # Single-string cell — avoids Streamlit markdown parser mangling newlines
         cell = (
             f'<div class="day-cell" style="height:78px;border-radius:14px;padding:10px;'
             f'background:{bg};color:{fg};border:1px solid rgba(255,255,255,0.12);'
@@ -193,14 +186,13 @@ st.divider()
 # ----------------------------
 # Month table (drill-down)
 # ----------------------------
-# Create inline subheader with filter
 header_col1, header_col2 = st.columns([1, 0.15])
 with header_col1:
     st.subheader("Daily log (this month)")
 with header_col2:
     emotion_filter = st.multiselect(
-        "Filter table to emotion(s)", 
-        emotions, 
+        "Filter table to emotion(s)",
+        emotions,
         default=[],
         label_visibility="collapsed",
         key="emotion_filter"
@@ -212,8 +204,11 @@ table["date"] = table["date"].dt.date
 if emotion_filter:
     table = table[table["emotion"].isin(emotion_filter)]
 
+table_cols = ["date", "day", "emotion", "score", "sheet", "color_hex"]
+if "notes" in table.columns:
+    table_cols.append("notes")
 st.dataframe(
-    table[["date","day","emotion","score","sheet","color_hex"]],
+    table[table_cols],
     use_container_width=True,
     hide_index=True
 )
