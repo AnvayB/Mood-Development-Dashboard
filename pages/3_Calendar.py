@@ -144,12 +144,12 @@ def text_color(bg_hex: str) -> str:
 # ----------------------------
 st.subheader(f"{MONTH_NAMES[month-1]} {year}")
 
-cal = calendar.Calendar(firstweekday=0)  # 0=Monday
+cal = calendar.Calendar(firstweekday=6)  # 6=Sunday
 weeks = cal.monthdayscalendar(year, month)
 
 # Weekday labels
 cols = st.columns(7)
-for i, name in enumerate(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]):
+for i, name in enumerate(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]):
     cols[i].markdown(f"<div style='text-align:center; opacity:0.8; font-weight:600;'>{name}</div>", unsafe_allow_html=True)
 
 # Render each week
@@ -180,6 +180,7 @@ for week in weeks:
         score = row["score"]
         bg = EMOTION_HEX.get(emo, "#444444")
         fg = text_color(bg)
+        note_text = str(row.get("notes") or "").strip()
 
         raw_note = row.get("notes", None)
         has_note = pd.notna(raw_note) and str(raw_note).strip() != ""
@@ -192,9 +193,25 @@ for week in weeks:
                 <div class="day-note-tooltip">{escaped}</div>
             </div>"""
 
+        _note_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" '
+            'fill="none" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+            '<polyline points="14 2 14 8 20 8"/>'
+            '<line x1="16" y1="13" x2="8" y2="13"/>'
+            '<line x1="16" y1="17" x2="8" y2="17"/>'
+            '<polyline points="10 9 9 9 8 9"/>'
+            '</svg>'
+        )
+        note_indicator = (
+            f'<div title="{note_text}" style="position:absolute;bottom:6px;right:8px;opacity:0.6;">{_note_svg}</div>'
+            if note_text else ""
+        )
+
         cols[i].markdown(
             f"""
-            <div style="
+            <div title="{tooltip}"
+                 style="
                     position:relative;
                     height:78px;
                     border-radius:14px;
@@ -211,7 +228,7 @@ for week in weeks:
                 <div style="margin-top:2px; font-size:12px; opacity:0.9;">
                     {int(score) if pd.notna(score) else ""}
                 </div>
-                {note_html}
+                {note_indicator}
             </div>
             """,
             unsafe_allow_html=True
@@ -241,8 +258,11 @@ table["date"] = table["date"].dt.date
 if emotion_filter:
     table = table[table["emotion"].isin(emotion_filter)]
 
+table_cols = ["date", "day", "emotion", "score", "sheet", "color_hex"]
+if "notes" in table.columns:
+    table_cols.append("notes")
 st.dataframe(
-    table[["date","day","emotion","score","sheet","color_hex"]],
+    table[table_cols],
     use_container_width=True,
     hide_index=True
 )
