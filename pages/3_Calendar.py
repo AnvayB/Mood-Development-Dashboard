@@ -1,3 +1,4 @@
+import html as html_lib
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -15,20 +16,58 @@ st.markdown(
         padding-left: 2.5rem;
         padding-right: 2.5rem;
     }
-    /* Style the inline emotion selectbox to look more integrated */
     div[data-testid="stHorizontalBlock"]:has(select) {
         align-items: center;
     }
-    /* Style the multiselect filter width - target the value display container */
     .stMultiSelect > div > div > div.st-ak.st-al.st-bc.st-bd.st-be {
         width: 60px !important;
     }
-    /* Target the main multiselect container - set width to 200px and lock height */
     .stMultiSelect > div.st-ae[data-baseweb="select"] {
         width: 200px !important;
         height: 40px !important;
         min-height: 40px !important;
         max-height: 40px !important;
+    }
+    /* Allow note tooltips to overflow column and markdown containers */
+    div[data-testid="column"],
+    div[data-testid="stMarkdownContainer"] {
+        overflow: visible !important;
+    }
+    .day-note-wrapper {
+        position: absolute;
+        bottom: 6px;
+        right: 8px;
+    }
+    .day-note-icon {
+        cursor: default;
+        opacity: 0.55;
+        font-size: 13px;
+        line-height: 1;
+        display: block;
+    }
+    .day-note-tooltip {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 22px;
+        right: 0;
+        background: rgba(18, 18, 18, 0.96);
+        color: #f0f0f0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.45;
+        width: 170px;
+        white-space: normal;
+        z-index: 9999;
+        transition: opacity 0.15s ease;
+        border: 1px solid rgba(255,255,255,0.13);
+        box-shadow: 0 4px 18px rgba(0,0,0,0.55);
+        pointer-events: none;
+    }
+    .day-note-wrapper:hover .day-note-tooltip {
+        visibility: visible;
+        opacity: 1;
     }
     </style>
     """,
@@ -142,13 +181,21 @@ for week in weeks:
         bg = EMOTION_HEX.get(emo, "#444444")
         fg = text_color(bg)
 
-        # Tooltip via title=""
-        tooltip = f"{emo} | score {score} | {row['date'].date()}"
+        raw_note = row.get("notes", None)
+        has_note = pd.notna(raw_note) and str(raw_note).strip() != ""
+        note_html = ""
+        if has_note:
+            escaped = html_lib.escape(str(raw_note).strip())
+            note_html = f"""
+            <div class="day-note-wrapper">
+                <span class="day-note-icon">📄</span>
+                <div class="day-note-tooltip">{escaped}</div>
+            </div>"""
 
         cols[i].markdown(
             f"""
-            <div title="{tooltip}"
-                 style="
+            <div style="
+                    position:relative;
                     height:78px;
                     border-radius:14px;
                     padding:10px;
@@ -164,6 +211,7 @@ for week in weeks:
                 <div style="margin-top:2px; font-size:12px; opacity:0.9;">
                     {int(score) if pd.notna(score) else ""}
                 </div>
+                {note_html}
             </div>
             """,
             unsafe_allow_html=True
