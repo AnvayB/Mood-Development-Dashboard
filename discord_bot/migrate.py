@@ -2,7 +2,7 @@
 One-time migration: load mood_all_years.csv → Supabase mood_entries table.
 
 Run from the repo root:
-    SUPABASE_URL=... SUPABASE_KEY=... python sms_bot/migrate.py
+    SUPABASE_URL=... SUPABASE_KEY=... python discord_bot/migrate.py
 """
 import math
 import os

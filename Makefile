@@ -14,8 +14,6 @@ add:
 
 # git commit -m "message"
 
-trials:
-	git push origin trials
 
 push:
 	git push origin main
@@ -24,7 +22,6 @@ main:
 	git checkout main
 	git branch
 	git pull
-	git checkout trials
 
 user-reset:
 	git config user.name "AnvayB"
@@ -34,3 +31,11 @@ user-check:
 	git config user.name
 	git config user.email
 
+log:
+	curl -X POST https://mood-development-dashboard-production.up.railway.app/webhook/sms \
+  -d "Body=$(filter-out log,$(MAKECMDGOALS))" \
+  -d "From=+14081234567"
+
+# Catch-all so the message isn't treated as a missing target
+%:
+	@:

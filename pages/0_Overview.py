@@ -3,7 +3,7 @@ import calendar
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from data.db import load_all_entries, load_monthly_hi
+from data.db import EMOTION_COLOR_MAP, load_all_entries, load_monthly_hi
 
 # Widen page content beyond default container
 st.markdown(
@@ -164,13 +164,7 @@ emotion_counts["emotion"] = pd.Categorical(
     emotion_counts["emotion"], categories=emotion_order, ordered=True
 )
 emotion_counts = emotion_counts.sort_values("emotion")
-emotion_color_map = (
-    dfy_all[["emotion", "color_hex"]]
-    .dropna(subset=["emotion", "color_hex"])
-    .drop_duplicates(subset="emotion", keep="first")
-    .set_index("emotion")["color_hex"]
-    .to_dict()
-)
+emotion_color_map = EMOTION_COLOR_MAP
 
 c1, c2 = st.columns(2)
 

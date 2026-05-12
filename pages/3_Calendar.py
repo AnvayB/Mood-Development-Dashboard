@@ -154,6 +154,7 @@ for week in weeks:
         score = row["score"]
         bg = EMOTION_HEX.get(emo, "#444444")
         fg = text_color(bg)
+        note_text = str(row.get("notes") or "").strip()
 
         # Build note tooltip — strip any HTML the DB may have stored, then escape
         note_text = clean_note(row.get("notes", None))
