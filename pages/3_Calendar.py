@@ -1,4 +1,5 @@
 import html as html_lib
+import re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -28,52 +29,26 @@ st.markdown(
         min-height: 40px !important;
         max-height: 40px !important;
     }
-    /* Allow note tooltips to overflow column and markdown containers */
-    div[data-testid="column"],
-    div[data-testid="stMarkdownContainer"] {
-        overflow: visible !important;
-    }
-    .day-note-wrapper {
-        position: absolute;
-        bottom: 6px;
-        right: 8px;
-    }
-    .day-note-icon {
-        cursor: default;
-        opacity: 0.55;
-        font-size: 13px;
-        line-height: 1;
-        display: block;
-    }
+    .day-cell { position: relative; overflow: visible; }
+    .day-note-wrapper { position: absolute; bottom: 6px; right: 8px; overflow: visible; }
+    .day-note-icon { cursor: default; opacity: 0.55; font-size: 13px; line-height: 1; display: block; }
     .day-note-tooltip {
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        bottom: 22px;
-        right: 0;
-        background: rgba(18, 18, 18, 0.96);
-        color: #f0f0f0;
-        padding: 8px 10px;
-        border-radius: 8px;
-        font-size: 11px;
-        line-height: 1.45;
-        width: 170px;
-        white-space: normal;
-        z-index: 9999;
+        visibility: hidden; opacity: 0;
+        position: absolute; bottom: 22px; right: 0;
+        background: rgba(18,18,18,0.97); color: #f0f0f0;
+        padding: 8px 10px; border-radius: 8px;
+        font-size: 11px; line-height: 1.45; width: 170px;
+        white-space: normal; z-index: 9999;
         transition: opacity 0.15s ease;
         border: 1px solid rgba(255,255,255,0.13);
         box-shadow: 0 4px 18px rgba(0,0,0,0.55);
         pointer-events: none;
     }
-    .day-note-wrapper:hover .day-note-tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
+    .day-note-wrapper:hover .day-note-tooltip { visibility: visible; opacity: 1; }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 
 def load_all():
@@ -90,7 +65,6 @@ years = sorted(df["year"].unique().tolist())
 year = st.sidebar.selectbox("Year", years, index=len(years) - 1)
 
 months_available = sorted(df[df["year"] == year]["month"].unique().tolist())
-# default to latest available month in that year
 default_month_idx = len(months_available) - 1
 month = st.sidebar.selectbox(
     "Month",
@@ -108,12 +82,10 @@ emotions = sorted(df["emotion"].dropna().unique().tolist())
 dfm = df[(df["year"] == year) & (df["month"] == month)].copy()
 dfm = dfm.sort_values("day")
 
-# one row per day (you should already have 1/day)
 day_to_row = {int(r["day"]): r for _, r in dfm.iterrows()}
 
 # ----------------------------
-# Color mapping (use your palette_match if you want, but emotion is enough)
-# Feel free to tweak the hex values to match your actual sheet colors.
+# Color mapping
 # ----------------------------
 EMOTION_HEX = {
     "Happy": "#FFD966",
@@ -127,50 +99,52 @@ EMOTION_HEX = {
     "Depressed": "#1155CC",
     "Hopeless": "#674EA7",
     "Horrible": "#000000",
-    # If you have extras (like you showed earlier)
     "Suicidal": "#000000",
 }
 
 def text_color(bg_hex: str) -> str:
-    """Choose white/black text based on background luminance."""
     h = bg_hex.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-    # perceived luminance
     lum = 0.2126*r + 0.7152*g + 0.0722*b
     return "#111111" if lum > 160 else "#F5F5F5"
 
+def clean_note(raw) -> str:
+    """Return plain text from a notes value (strip HTML tags the DB may have stored)."""
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return ""
+    return re.sub(r"<[^>]+>", "", str(raw)).strip()
+
 # ----------------------------
-# Calendar grid (Mon-Sun)
+# Calendar grid
 # ----------------------------
 st.subheader(f"{MONTH_NAMES[month-1]} {year}")
 
-cal = calendar.Calendar(firstweekday=6)  # 6=Sunday
+cal = calendar.Calendar(firstweekday=6)  # 6 = Sunday
 weeks = cal.monthdayscalendar(year, month)
 
-# Weekday labels
 cols = st.columns(7)
 for i, name in enumerate(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]):
-    cols[i].markdown(f"<div style='text-align:center; opacity:0.8; font-weight:600;'>{name}</div>", unsafe_allow_html=True)
+    cols[i].markdown(
+        f"<div style='text-align:center;opacity:0.8;font-weight:600;'>{name}</div>",
+        unsafe_allow_html=True
+    )
 
-# Render each week
 for week in weeks:
     cols = st.columns(7)
     for i, d in enumerate(week):
         if d == 0:
-            # empty cell
             cols[i].markdown(
-                "<div style='height:78px; border-radius:12px; background:rgba(255,255,255,0.03);'></div>",
+                "<div style='height:78px;border-radius:12px;background:rgba(255,255,255,0.03);'></div>",
                 unsafe_allow_html=True
             )
             continue
 
         row = day_to_row.get(d)
         if row is None:
-            # missing day (should be rare)
             cols[i].markdown(
-                f"<div style='height:78px; border-radius:12px; padding:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);'>"
-                f"<div style='font-size:16px; font-weight:700;'>{d}</div>"
-                f"<div style='opacity:0.6; font-size:12px;'>No data</div>"
+                f"<div style='height:78px;border-radius:12px;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);'>"
+                f"<div style='font-size:16px;font-weight:700;'>{d}</div>"
+                f"<div style='opacity:0.6;font-size:12px;'>No data</div>"
                 f"</div>",
                 unsafe_allow_html=True
             )
@@ -182,71 +156,44 @@ for week in weeks:
         fg = text_color(bg)
         note_text = str(row.get("notes") or "").strip()
 
-        raw_note = row.get("notes", None)
-        has_note = pd.notna(raw_note) and str(raw_note).strip() != ""
+        # Build note tooltip — strip any HTML the DB may have stored, then escape
+        note_text = clean_note(row.get("notes", None))
         note_html = ""
-        if has_note:
-            escaped = html_lib.escape(str(raw_note).strip())
-            note_html = f"""
-            <div class="day-note-wrapper">
-                <span class="day-note-icon">📄</span>
-                <div class="day-note-tooltip">{escaped}</div>
-            </div>"""
+        if note_text:
+            safe = html_lib.escape(note_text)
+            note_html = (
+                '<div class="day-note-wrapper">'
+                '<span class="day-note-icon">\U0001f4c4</span>'
+                f'<div class="day-note-tooltip">{safe}</div>'
+                '</div>'
+            )
 
-        _note_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" '
-            'fill="none" stroke="#000000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
-            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
-            '<polyline points="14 2 14 8 20 8"/>'
-            '<line x1="16" y1="13" x2="8" y2="13"/>'
-            '<line x1="16" y1="17" x2="8" y2="17"/>'
-            '<polyline points="10 9 9 9 8 9"/>'
-            '</svg>'
+        score_display = int(score) if pd.notna(score) else ""
+        # Single-string cell — avoids Streamlit markdown parser mangling newlines
+        cell = (
+            f'<div class="day-cell" style="height:78px;border-radius:14px;padding:10px;'
+            f'background:{bg};color:{fg};border:1px solid rgba(255,255,255,0.12);'
+            f'box-shadow:0 8px 30px rgba(0,0,0,0.25);">'
+            f'<div style="font-size:16px;font-weight:800;line-height:1;">{d}</div>'
+            f'<div style="margin-top:6px;font-size:12px;font-weight:600;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{html_lib.escape(emo)}</div>'
+            f'<div style="margin-top:2px;font-size:12px;opacity:0.9;">{score_display}</div>'
+            f'{note_html}'
+            f'</div>'
         )
-        note_indicator = (
-            f'<div title="{note_text}" style="position:absolute;bottom:6px;right:8px;opacity:0.6;">{_note_svg}</div>'
-            if note_text else ""
-        )
-
-        cols[i].markdown(
-            f"""
-            <div title="{note_text}"
-                 style="
-                    position:relative;
-                    height:78px;
-                    border-radius:14px;
-                    padding:10px;
-                    background:{bg};
-                    color:{fg};
-                    border:1px solid rgba(255,255,255,0.12);
-                    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-                 ">
-                <div style="font-size:16px; font-weight:800; line-height:1;">{d}</div>
-                <div style="margin-top:6px; font-size:12px; font-weight:600; opacity:0.95; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    {emo}
-                </div>
-                <div style="margin-top:2px; font-size:12px; opacity:0.9;">
-                    {int(score) if pd.notna(score) else ""}
-                </div>
-                {note_indicator}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        cols[i].markdown(cell, unsafe_allow_html=True)
 
 st.divider()
 
 # ----------------------------
 # Month table (drill-down)
 # ----------------------------
-# Create inline subheader with filter
 header_col1, header_col2 = st.columns([1, 0.15])
 with header_col1:
     st.subheader("Daily log (this month)")
 with header_col2:
     emotion_filter = st.multiselect(
-        "Filter table to emotion(s)", 
-        emotions, 
+        "Filter table to emotion(s)",
+        emotions,
         default=[],
         label_visibility="collapsed",
         key="emotion_filter"
