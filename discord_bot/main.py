@@ -49,6 +49,8 @@ async def on_message(message: discord.Message):
         if time.time() < expiry and text.lower() not in {"no", "nope", "n", "skip", "nah"}:
             db.update_notes(log_date, text)
             await message.channel.send("Note saved ✓")
+        else:
+            await message.channel.send("No worries, see you tomorrow!")
         return
 
     # Check for a pending session (supports late replies)
