@@ -210,7 +210,7 @@ for week in weeks:
 
         cols[i].markdown(
             f"""
-            <div title="{tooltip}"
+            <div title="{note_text}"
                  style="
                     position:relative;
                     height:78px;
