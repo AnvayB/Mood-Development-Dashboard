@@ -45,13 +45,19 @@ async def on_message(message: discord.Message):
     # Handle pending notes reply (must come before mood-logging logic)
     uid = str(message.author.id)
     if uid in pending_notes:
-        log_date, expiry = pending_notes.pop(uid)
-        if time.time() < expiry and text.lower() not in {"no", "nope", "n", "skip", "nah"}:
-            db.update_notes(log_date, text)
-            await message.channel.send("Note saved ✓")
+        log_date, expiry = pending_notes[uid]
+        if time.time() < expiry:
+            # Still within the 1-hour notes window — treat this as a notes reply
+            pending_notes.pop(uid)
+            if text.lower() not in {"no", "nope", "n", "skip", "nah"}:
+                db.update_notes(log_date, text)
+                await message.channel.send("Note saved ✓")
+            else:
+                await message.channel.send("No worries, see you tomorrow!")
+            return
         else:
-            await message.channel.send("No worries, see you tomorrow!")
-        return
+            # Expired — discard the stale entry and fall through to mood logging
+            pending_notes.pop(uid)
 
     # Check for a pending session (supports late replies)
     session = db.get_pending_session(settings.DISCORD_USER_ID)
