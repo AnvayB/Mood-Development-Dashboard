@@ -23,12 +23,17 @@ async def send_daily_prompt(bot: discord.Client) -> None:
     print(f"Daily prompt sent for {today}")
 
 
+_scheduler = AsyncIOScheduler()
+
+
 def schedule_daily_prompt(bot: discord.Client) -> None:
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
+    # Guard against on_ready firing multiple times on reconnect — only start once
+    if _scheduler.running:
+        return
+    _scheduler.add_job(
         send_daily_prompt,
         CronTrigger(hour=21, minute=0, timezone="America/Los_Angeles"),
         args=[bot],
     )
-    scheduler.start()
+    _scheduler.start()
     print("Scheduler started — daily prompt fires at 9pm PT")
