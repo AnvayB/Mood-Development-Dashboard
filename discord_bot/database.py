@@ -53,11 +53,14 @@ def log_pending_session(phone: str, for_date: date) -> None:
 
 
 def get_pending_session(phone: str) -> dict | None:
-    """Return the most recent unresponded session for this phone number."""
+    """Return the most recent unresponded session within the last 2 days."""
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
     res = (client.table("pending_sessions")
            .select("*")
            .eq("phone_number", phone)
            .eq("responded", False)
+           .gte("sent_at", cutoff)
            .order("sent_at", desc=True)
            .limit(1)
            .execute())

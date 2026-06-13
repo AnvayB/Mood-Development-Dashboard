@@ -47,7 +47,7 @@ async def on_message(message: discord.Message):
     if uid in pending_notes:
         log_date, expiry = pending_notes[uid]
         if time.time() < expiry:
-            # Still within the 1-hour notes window — treat this as a notes reply
+            # Still within the notes window — treat this as a notes reply
             pending_notes.pop(uid)
             if text.lower() not in {"no", "nope", "n", "skip", "nah"}:
                 db.update_notes(log_date, text)
@@ -63,8 +63,10 @@ async def on_message(message: discord.Message):
     session = db.get_pending_session(settings.DISCORD_USER_ID)
     log_date = date.fromisoformat(session["for_date"]) if session else _today_pt()
 
-    # Duplicate guard
+    # Duplicate guard — also clean up any stale session so it doesn't haunt future messages
     if db.entry_exists(log_date):
+        if session:
+            db.mark_session_responded(session["id"])
         await message.channel.send(f"You already logged {log_date.strftime('%b %d')} ✓")
         return
 
@@ -81,7 +83,7 @@ async def on_message(message: discord.Message):
         f"Logged: {emotion} ({score}/11) for {log_date.strftime('%a %b %-d')} ✓"
     )
 
-    pending_notes[str(message.author.id)] = (log_date, time.time() + 3600)
+    pending_notes[str(message.author.id)] = (log_date, time.time() + 8 * 3600)
     await message.channel.send(
         "Want to add a note for today? Reply with anything you want to remember, or 'no' to skip 📝"
     )
