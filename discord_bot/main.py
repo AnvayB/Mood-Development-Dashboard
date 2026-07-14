@@ -5,7 +5,6 @@ import discord
 import pytz
 
 import database as db
-from categorize import categorize_emotion
 from config import settings
 from database import EMOTION_MAP
 from scheduler import _today_pt, schedule_daily_prompt
@@ -62,8 +61,13 @@ async def on_message(message: discord.Message):
         await message.channel.send(f"You already logged {log_date.strftime('%b %d')} ✓")
         return
 
-    # Categorize with Claude
-    emotion = categorize_emotion(text)
+    # Match input to a valid emotion (case-insensitive)
+    emotion_lookup = {k.lower(): k for k in EMOTION_MAP}
+    emotion = emotion_lookup.get(text.lower())
+    if emotion is None:
+        valid = ", ".join(EMOTION_MAP.keys())
+        await message.channel.send(f"Hmm, I didn't recognize that. Valid emotions: {valid}")
+        return
 
     # Persist to Supabase
     db.insert_entry(log_date, emotion)
