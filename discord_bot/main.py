@@ -61,9 +61,50 @@ async def on_message(message: discord.Message):
         await message.channel.send(f"You already logged {log_date.strftime('%b %d')} ✓")
         return
 
-    # Match input to a valid emotion (case-insensitive)
-    emotion_lookup = {k.lower(): k for k in EMOTION_MAP}
-    emotion = emotion_lookup.get(text.lower())
+    # Match input to a valid emotion (case-insensitive, with synonyms)
+    SYNONYMS: dict[str, str] = {
+        # Happy
+        "happy": "Happy", "happiness": "Happy", "great": "Happy", "amazing": "Happy",
+        "wonderful": "Happy", "joyful": "Happy", "excited": "Happy", "elated": "Happy",
+        "fantastic": "Happy", "awesome": "Happy", "ecstatic": "Happy", "cheerful": "Happy",
+        "thrilled": "Happy", "delighted": "Happy", "pleased": "Happy",
+        # Productive
+        "productive": "Productive", "productive day": "Productive", "accomplished": "Productive",
+        "focused": "Productive", "motivated": "Productive", "efficient": "Productive", "busy": "Productive",
+        # Good
+        "good": "Good", "okay": "Good", "ok": "Good", "fine": "Good", "alright": "Good",
+        "decent": "Good", "not bad": "Good", "pretty good": "Good", "solid": "Good",
+        # Tired
+        "tired": "Tired", "exhausted": "Tired", "sleepy": "Tired", "fatigued": "Tired",
+        "fatigue": "Tired", "drained": "Tired", "worn out": "Tired", "drowsy": "Tired",
+        "sluggish": "Tired", "worn-out": "Tired",
+        # Lazy
+        "lazy": "Lazy", "lethargic": "Lazy", "unmotivated": "Lazy", "unproductive": "Lazy",
+        "bored": "Lazy", "procrastinating": "Lazy",
+        # SAD
+        "sad": "SAD", "unhappy": "SAD", "upset": "SAD", "down": "SAD", "blue": "SAD",
+        "gloomy": "SAD", "melancholy": "SAD", "sorrowful": "SAD", "heartbroken": "SAD",
+        "miserable": "SAD",
+        # Stress/Anxiety
+        "stress/anxiety": "Stress/Anxiety", "stressed": "Stress/Anxiety", "stressful": "Stress/Anxiety",
+        "anxious": "Stress/Anxiety", "anxiety": "Stress/Anxiety", "nervous": "Stress/Anxiety",
+        "overwhelmed": "Stress/Anxiety", "worried": "Stress/Anxiety", "tense": "Stress/Anxiety",
+        "uneasy": "Stress/Anxiety", "panicked": "Stress/Anxiety", "stress": "Stress/Anxiety",
+        # Angry/Annoyed
+        "angry/annoyed": "Angry/Annoyed", "angry": "Angry/Annoyed", "annoyed": "Angry/Annoyed",
+        "mad": "Angry/Annoyed", "frustrated": "Angry/Annoyed", "irritated": "Angry/Annoyed",
+        "furious": "Angry/Annoyed", "agitated": "Angry/Annoyed", "pissed": "Angry/Annoyed",
+        "rage": "Angry/Annoyed", "anger": "Angry/Annoyed",
+        # Depressed
+        "depressed": "Depressed", "depression": "Depressed", "empty": "Depressed",
+        "numb": "Depressed", "worthless": "Depressed", "low": "Depressed",
+        # Hopeless
+        "hopeless": "Hopeless", "hopelessness": "Hopeless", "defeated": "Hopeless",
+        "despair": "Hopeless", "despairing": "Hopeless", "giving up": "Hopeless",
+        # Suicidal
+        "suicidal": "Suicidal",
+    }
+    emotion = SYNONYMS.get(text.lower())
     if emotion is None:
         valid = ", ".join(EMOTION_MAP.keys())
         await message.channel.send(f"Hmm, I didn't recognize that. Valid emotions: {valid}")
