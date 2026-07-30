@@ -1,5 +1,4 @@
-import time
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 
 import discord
 import pytz
@@ -13,10 +12,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = discord.Client(intents=intents)
-
-# Maps Discord user_id -> (log_date, expiry_unix_timestamp)
-# Tracks users awaiting a follow-up notes reply after mood logging.
-pending_notes: dict[str, tuple[date, float]] = {}
 
 
 @bot.event
@@ -42,11 +37,11 @@ async def on_message(message: discord.Message):
     text = message.content.strip()
 
     # Handle pending notes reply (must come before mood-logging logic)
-    uid = str(message.author.id)
-    if uid in pending_notes:
-        log_date, expiry = pending_notes.pop(uid)
-        if time.time() < expiry and text.lower() not in {"no", "nope", "n", "skip", "nah"}:
-            db.update_notes(log_date, text)
+    pending_date = db.get_pending_note_date()
+    if pending_date is not None:
+        db.clear_note_pending(pending_date)
+        if text.lower() not in {"no", "nope", "n", "skip", "nah"}:
+            db.update_notes(pending_date, text)
             await message.channel.send("Note saved ✓")
         else:
             await message.channel.send("No worries, see you tomorrow!")
@@ -120,7 +115,8 @@ async def on_message(message: discord.Message):
         f"Logged: {emotion} ({score}/11) for {log_date.strftime('%a %b %-d')} ✓"
     )
 
-    pending_notes[str(message.author.id)] = (log_date, time.time() + 3600)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    db.set_note_pending(log_date, expires_at)
     await message.channel.send(
         "Want to add a note for today? Reply with anything you want to remember, or 'no' to skip 📝"
     )

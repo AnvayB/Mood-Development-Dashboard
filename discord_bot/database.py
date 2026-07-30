@@ -76,3 +76,28 @@ def update_notes(log_date: date, notes: str) -> None:
      .update({"notes": notes})
      .eq("date", log_date.isoformat())
      .execute())
+
+
+def set_note_pending(log_date: date, expires_at: str) -> None:
+    (client.table("mood_entries")
+     .update({"note_pending": True, "note_expires_at": expires_at})
+     .eq("date", log_date.isoformat())
+     .execute())
+
+
+def get_pending_note_date() -> date | None:
+    res = (client.table("mood_entries")
+           .select("date")
+           .eq("note_pending", True)
+           .gt("note_expires_at", "now()")
+           .order("date", desc=True)
+           .limit(1)
+           .execute())
+    return date.fromisoformat(res.data[0]["date"]) if res.data else None
+
+
+def clear_note_pending(log_date: date) -> None:
+    (client.table("mood_entries")
+     .update({"note_pending": False, "note_expires_at": None})
+     .eq("date", log_date.isoformat())
+     .execute())
