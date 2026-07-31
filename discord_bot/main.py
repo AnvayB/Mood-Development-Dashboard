@@ -44,15 +44,17 @@ async def on_message(message: discord.Message):
             db.update_notes(pending_date, text)
             await message.channel.send("Note saved ✓")
         else:
-            await message.channel.send("No worries, see you tomorrow!")
-        return
+            # Expired — discard the stale entry and fall through to mood logging
+            pending_notes.pop(uid)
 
     # Check for a pending session (supports late replies)
     session = db.get_pending_session(settings.DISCORD_USER_ID)
     log_date = date.fromisoformat(session["for_date"]) if session else _today_pt()
 
-    # Duplicate guard
+    # Duplicate guard — also clean up any stale session so it doesn't haunt future messages
     if db.entry_exists(log_date):
+        if session:
+            db.mark_session_responded(session["id"])
         await message.channel.send(f"You already logged {log_date.strftime('%b %d')} ✓")
         return
 
