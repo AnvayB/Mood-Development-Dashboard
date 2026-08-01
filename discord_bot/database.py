@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from supabase import create_client
 
@@ -92,7 +92,7 @@ def get_pending_note_date() -> date | None:
     res = (client.table("mood_entries")
            .select("date")
            .eq("note_pending", True)
-           .gt("note_expires_at", "now()")
+           .gt("note_expires_at", datetime.now(timezone.utc).isoformat())
            .order("date", desc=True)
            .limit(1)
            .execute())
