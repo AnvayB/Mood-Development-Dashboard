@@ -36,6 +36,17 @@ async def on_message(message: discord.Message):
 
     text = message.content.strip()
 
+    try:
+        await handle_message(message, text)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        await message.channel.send(
+            "⚠️ Something went wrong logging that (likely a temporary database hiccup) — please resend your reply."
+        )
+
+
+async def handle_message(message: discord.Message, text: str) -> None:
     # Handle pending notes reply (must come before mood-logging logic)
     pending_date = db.get_pending_note_date()
     if pending_date is not None:
